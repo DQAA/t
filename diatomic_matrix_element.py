@@ -10,10 +10,13 @@ from __future__ import absolute_import
 from __future__ import division
 import sys
 import math
+from TB.orbitals import Orbitals
 from TB.constants import *
+# from constants import *
 import torch
 import warnings
 from TB import tb_params
+# import tb_params
 
 
 def me_diatomic(bond, n, l_min, l_max, m, which_neighbour, overlap=False, bl=False):
@@ -91,25 +94,32 @@ def d_me(N, l, m1, m2):
     """
 
     if N == -1.0 and m1 == m2:
-        prefactor = math.sqrt(math.factorial(l + m2) * math.factorial(l - m2) *
-                              math.factorial(l + m1) * math.factorial(l - m1))
+        prefactor = torch.sqrt(torch.tensor(math.factorial(l + m2) * math.factorial(l - m2) *
+                              math.factorial(l + m1) * math.factorial(l - m1)))
     else:
-        prefactor = ((0.5 * (1 + N)) ** l) * (((1 - N) / (1 + N)) ** (m1 * 0.5 - m2 * 0.5)) * \
-                    math.sqrt(math.factorial(l + m2) * math.factorial(l - m2) *
-                              math.factorial(l + m1) * math.factorial(l - m1))
+        if (1 - N) / (1 + N) == 0:
+            prefactor = 0*N
+        else:
+            prefactor = ((0.5 * (1 + N)) ** l) * (((1 - N) / (1 + N)) ** (m1 * 0.5 - m2 * 0.5)) * \
+                    torch.sqrt(torch.tensor(math.factorial(l + m2) * math.factorial(l - m2) *
+                              math.factorial(l + m1) * math.factorial(l - m1)))
 
     ans = 0
     for t in range(2 * l + 2):
         if l + m2 - t >= 0 and l - m1 - t >= 0 and t + m1 - m2 >= 0:
             if N == -1.0 and t == 0:
-                ans += ((-1) ** t) / \
+                ans += torch.tensor(((-1) ** t) / \
                        (math.factorial(l + m2 - t) * math.factorial(l - m1 - t) *
-                        math.factorial(t) * math.factorial(t + m1 - m2))
+                        math.factorial(t) * math.factorial(t + m1 - m2)))
             else:
-                ans += ((-1) ** t) * (((1 - N) / (1 + N)) ** t) / \
-                       (math.factorial(l + m2 - t) * math.factorial(l - m1 - t) *
-                        math.factorial(t) * math.factorial(t + m1 - m2))
+                if (1 - N) / (1 + N) == 0:
+                    ans += 0*N
+                else:
+                    ans += ((-1) ** t) * (((1 - N) / (1 + N)) ** t) / \
+                           torch.tensor((math.factorial(l + m2 - t) * math.factorial(l - m1 - t) *
+                            math.factorial(t) * math.factorial(t + m1 - m2)))
 
+    # print(((0.5 * (1 + N)) ** l) * (((1 - N) / (1 + N)) ** (m1 * 0.5 - m2 * 0.5)), ans * prefactor)
     return torch.nan_to_num(ans * prefactor)
 
 
@@ -141,10 +151,10 @@ def a_coef(m, gamma):
     """
 
     if m == 0:
-        return 1.0 / math.sqrt(2)
+        return 1.0 / torch.sqrt(torch.tensor(2, dtype=torch.float64))
     else:
         return ((-1) ** abs(m)) * \
-               (tau(m) * math.cos(abs(m) * gamma) - tau(-m) * math.sin(abs(m) * gamma))
+               (tau(m) * torch.cos(abs(m) * gamma) - tau(-m) * torch.sin(abs(m) * gamma))
 
 
 def b_coef(m, gamma):
@@ -160,7 +170,7 @@ def b_coef(m, gamma):
     """
 
     return ((-1) ** abs(m)) * \
-           (tau(m) * math.sin(abs(m) * gamma) + tau(-m) * math.cos(abs(m) * gamma))
+           (tau(m) * torch.sin(abs(m) * gamma) + tau(-m) * torch.cos(abs(m) * gamma))
 
 
 def s_me(N, l, m1, m2, gamma):
@@ -257,7 +267,10 @@ def me(atom1, ll1, atom2, ll2, coords, which_neighbour=0, overlap=False):
         M = coords[1]
         N = coords[2]
 
-        gamma = torch.atan2(L, M)
+        if M != 0:
+            gamma = torch.atan2(L, M)
+        else:
+            gamma = 0*L*M
 
         if l1 > l2:
             code = [n2, n1]
@@ -294,32 +307,70 @@ def me(atom1, ll1, atom2, ll2, coords, which_neighbour=0, overlap=False):
 
 
 if __name__ == "__main__":
-    x0 = np.array([0, 0, 0], dtype=float)
-    x1 = np.array([1, 1, 1], dtype=float)
+    # x0 = np.array([0, 0, 0], dtype=float)
+    # x1 = np.array([1, 1, 1], dtype=float)
 
-    coords = x0 - x1
-    coords /= np.linalg.norm(coords)
+    # coords = x0 - x1
+    # coords /= np.linalg.norm(coords)
 
-    print(coords)
+    # print(coords)
 
-    # print d_me(coords[2], 0, 0, 0)
-    # print d_me(-coords[2], 0, 0, 0)
-    # print d_me(-coords[2], 1, 0, 0)
+    # # print d_me(coords[2], 0, 0, 0)
+    # # print d_me(-coords[2], 0, 0, 0)
+    # # print d_me(-coords[2], 1, 0, 0)
 
-    print(d_me(-coords[2], 1, 1, 0))
-    print(d_me(-coords[2], 1, 0, 1))
-    print(d_me(-coords[2], 2, 1, 0))
-    print(d_me(-coords[2], 2, 0, 1))
-    print(d_me(-coords[2], 2, 2, 1))
-    print(d_me(-coords[2], 2, 1, 2))
-    print("-----------------------------")
-    print(d_me(coords[2], 1, 1, 0))
-    print(d_me(coords[2], 1, 0, 1))
-    print(d_me(coords[2], 2, 1, 0))
-    print(d_me(coords[2], 2, 0, 1))
-    print(d_me(coords[2], 2, 2, 1))
-    print(d_me(coords[2], 2, 1, 2))
-    # print d_me(-coords[2], 1, -1, 0)
-    # print d_me(-coords[2], 1, 0, -1)
-    # print d_me(-coords[2], 1, -1, -1)
-    # print d_me(-coords[2], 1, 1, 1)
+    # print(d_me(-coords[2], 1, 1, 0))
+    # print(d_me(-coords[2], 1, 0, 1))
+    # print(d_me(-coords[2], 2, 1, 0))
+    # print(d_me(-coords[2], 2, 0, 1))
+    # print(d_me(-coords[2], 2, 2, 1))
+    # print(d_me(-coords[2], 2, 1, 2))
+    # print("-----------------------------")
+    # print(d_me(coords[2], 1, 1, 0))
+    # print(d_me(coords[2], 1, 0, 1))
+    # print(d_me(coords[2], 2, 1, 0))
+    # print(d_me(coords[2], 2, 0, 1))
+    # print(d_me(coords[2], 2, 2, 1))
+    # print(d_me(coords[2], 2, 1, 2))
+    # # print d_me(-coords[2], 1, -1, 0)
+    # # print d_me(-coords[2], 1, 0, -1)
+    # # print d_me(-coords[2], 1, -1, -1)
+    # # print d_me(-coords[2], 1, 1, 1)
+    # x0 = torch.tensor([0, 0, 0], dtype=torch.float64, requires_grad=True)
+    # x1 = torch.tensor([1, 1, 1], dtype=torch.float64, requires_grad=True)
+    # coords = x0 - x1
+    # coords2 = coords / torch.norm(coords)
+    # y = d_me(coords2[2], 2, 1, 2)
+    # y.backward()
+    # print(x0.grad, x1.grad, y)
+    bi_orb = Orbitals('Bi')
+    bi_orb.add_orbital("s", energy=-10.906, orbital=0, magnetic=0, spin=0)
+    bi_orb.add_orbital("px", energy=-0.486, orbital=1, magnetic=-1, spin=0)
+    bi_orb.add_orbital("py", energy=-0.486, orbital=1, magnetic=1, spin=0)
+    bi_orb.add_orbital("pz", energy=-0.486, orbital=1, magnetic=0, spin=0)
+    bi_orb.add_orbital("s", energy=-10.906, orbital=0, magnetic=0, spin=1)
+    bi_orb.add_orbital("px", energy=-0.486, orbital=1, magnetic=-1, spin=1)
+    bi_orb.add_orbital("py", energy=-0.486, orbital=1, magnetic=1, spin=1)
+    bi_orb.add_orbital("pz", energy=-0.486, orbital=1, magnetic=0, spin=1)
+    x0 = torch.tensor([0, 0, 0], dtype=torch.float64, requires_grad=True)
+    x1 = torch.tensor([0, 0, 5], dtype=torch.float64, requires_grad=True)
+    coords = x1 - x0
+    coords2 = coords / torch.norm(coords)
+    res = me(bi_orb, 5, bi_orb, 6, coords2, 1)
+    res.backward()
+    print(x0.grad, x1.grad, res)
+    # m = -1
+    # gamma = torch.tensor([0], dtype=torch.float64, requires_grad=True)
+    # res = a_coef(m, gamma)
+    # res.backward()
+    # print(gamma.grad, res)
+    # m = torch.tensor([2], dtype=torch.float64, requires_grad=True)
+    # res = tau(m)
+    # res.backward()
+    # # print(m.grad, res)
+    # N = coords2[2]
+    # l1 = bi_orb.orbitals[5]['l']
+    # m1 = bi_orb.orbitals[5]['m']
+    # res = d_me(N, l1, abs(m1), 0)
+    # res.backward()
+    # print(x0.grad, x1.grad, res)

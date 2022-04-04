@@ -476,7 +476,7 @@ class Hamiltonian(BasisTB):
                 coords1 = coords1 / norm
             else:
                 coords1 = torch.tensor([1.0, 0.0, 0.0], dtype=torch.float64)
-            # coords1 = coords1.detach()
+            coords1 = coords1.detach()
 
             if self.int_radial_dependence is None:
                 which_neighbour = ""
@@ -508,9 +508,9 @@ class Hamiltonian(BasisTB):
 
                 if s1 == s2:
 
-                    L = coords1[0].detach()
-                    M = coords1[1].detach()
-                    N = coords1[2].detach()
+                    L = coords1[0]
+                    M = coords1[1]
+                    N = coords1[2]
 
                     gamma = torch.atan2(L, M)
 
@@ -540,7 +540,10 @@ class Hamiltonian(BasisTB):
                 else:
                     param=0
 
-                factor = self.radial_dependence(self._bond_length[atom1][atom2], norm, param)             # add
+                if atom1 != atom2:
+                    factor = self.radial_dependence(self._bond_length[atom1][atom2], norm, param)             # add
+                else:
+                    factor = 1
 
             return me(atom_kind1, l1, atom_kind2, l2, coords1, which_neighbour,
                       overlap=overlap) * factor
