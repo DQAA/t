@@ -102,9 +102,9 @@ class StructDesignerXYZ(AbstractStructureDesigner):
         self._atom_list = OrderedDict(list(zip(labels, coords)))
         # for key in self._atom_list:
         #     self.atom_list[key].requires_grad_()
-        print("#######################################")
-        print(list(self._atom_list.values()))
-        print("#######################################")
+        # print("#######################################")
+        # print(list(self._atom_list.values()))
+        # print("#######################################")
         self._kd_tree = scipy.spatial.cKDTree(torch.stack(list(self._atom_list.values())),
                                               leafsize=1,
                                               balanced_tree=True)

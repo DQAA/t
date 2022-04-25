@@ -19,6 +19,7 @@ from TB.aux_functions import dict2xyz, xyz2tensor
 from TB.block_tridiagonalization import find_nonzero_lines, split_into_subblocks_optimized, cut_in_blocks, \
     split_into_subblocks
 import nanonet.verbosity as verbosity
+from torch.autograd import gradcheck
 
 unique_distances = set()
 
@@ -234,13 +235,13 @@ class Hamiltonian(BasisTB):
 
 
     def initialize(self):
-        print(list(self._atom_list.values()))
-        print("aaaaaaaaaaaaaaaa")
-        print([x.detach() for x in self._atom_list.values()])
+        # print(list(self._atom_list.values()))
+        # print("aaaaaaaaaaaaaaaa")
+        # print([x.detach() for x in self._atom_list.values()])
         self._kd_tree = scipy.spatial.cKDTree(torch.stack([x.detach() for x in self._atom_list.values()]),
                                               leafsize=1,
                                               balanced_tree=True)
-        print("bbbbbbbbbbbbbbbb")
+        # print("bbbbbbbbbbbbbbbb")
         # self._bond_length = [[torch.norm(x - y) for y in self._atom_list_new.values()] \
         #     for x in self._atom_list_new.values()]
         """Compute matrix elements of the Hamiltonian.
@@ -476,7 +477,7 @@ class Hamiltonian(BasisTB):
                 coords1 = coords1 / norm
             else:
                 coords1 = torch.tensor([1.0, 0.0, 0.0], dtype=torch.float64)
-            coords1 = coords1.detach()
+            # coords1 = coords1.detach()
 
             if self.int_radial_dependence is None:
                 which_neighbour = ""
@@ -541,10 +542,17 @@ class Hamiltonian(BasisTB):
                     param=0
 
                 if atom1 != atom2:
+                    # test = gradcheck(self.radial_dependence, (self._bond_length[atom1][atom2], norm, param))
+                    # print(test)
                     factor = self.radial_dependence(self._bond_length[atom1][atom2], norm, param)             # add
                 else:
                     factor = 1
 
+            # print(coords1)
+            # test = gradcheck(me, (atom_kind1, l1, atom_kind2, l2, coords1.detach().clone().requires_grad_(), which_neighbour,
+            #           overlap))
+            # print("test: ")
+            # print(test)
             return me(atom_kind1, l1, atom_kind2, l2, coords1, which_neighbour,
                       overlap=overlap) * factor
 

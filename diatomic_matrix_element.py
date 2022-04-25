@@ -214,7 +214,7 @@ def t_me(N, l, m1, m2, gamma):
     """
 
     if m1 == 0:
-        return 0
+        return 0*N
     else:
         return b_coef(m1, gamma) * \
                (((-1) ** abs(m2)) * d_me(N, l, abs(m1), abs(m2)) - d_me(N, l, abs(m1), -abs(m2)))
@@ -262,12 +262,13 @@ def me(atom1, ll1, atom2, ll2, coords, which_neighbour=0, overlap=False):
     s2 = atom2.orbitals[ll2]['s']
 
     if s1 == s2:
+        # print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA1")
 
         L = coords[0]
         M = coords[1]
         N = coords[2]
 
-        if M != 0:
+        if M != 0 or L != 0:
             gamma = torch.atan2(L, M)
         else:
             gamma = 0*L*M
@@ -303,7 +304,8 @@ def me(atom1, ll1, atom2, ll2, coords, which_neighbour=0, overlap=False):
 
         return prefactor * ans
     else:
-        return 0
+        # print("AAAAAAAAAAA2")
+        return 0*coords[0]*coords[1]*coords[2]
 
 
 if __name__ == "__main__":
